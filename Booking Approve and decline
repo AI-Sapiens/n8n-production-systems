@@ -1,0 +1,499 @@
+{
+  "name": "Booking Approve/decline",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Samsara Booking Approval",
+        "formDescription": "Review the screenshot and select an action.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Action",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Approve"
+                  },
+                  {
+                    "option": "Partial"
+                  },
+                  {
+                    "option": "Decline"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Amount if Partial",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "booking_id",
+              "fieldType": "textarea",
+              "fieldName": "booking_id"
+            }
+          ]
+        },
+        "options": {
+          "customCss": ":root {\n\t--font-family: 'Open Sans', sans-serif;\n\t\n\t/* Colors - Matching your Samsara UI */\n\t--color-background: #fbfcfe;\n\t--color-card-bg: #ffffff;\n\t--color-card-border: #dbdfe7;\n\t--color-label: #555555;\n\t--color-input-text: #71747A;\n\t--color-submit-btn-bg: #ff6d5a; /* That nice Coral/Red color */\n\t--color-submit-btn-text: #ffffff;\n\t--color-focus-border: rgb(90, 76, 194);\n\t--color-error: #ea1f30;\n\n\t/* Dimensions & Radii */\n\t--border-radius-card: 8px;\n\t--border-radius-input: 6px;\n\t--container-width: 480px;\n}\n\n/* Form Container Styling */\n.n8n-form-container {\n\tbackground-color: var(--color-background);\n\tfont-family: var(--font-family);\n\tdisplay: flex;\n\tjustify-content: center;\n\tpadding-top: 40px;\n}\n\n.n8n-form-card {\n\tbackground: var(--color-card-bg);\n\tborder: 1px solid var(--color-card-border);\n\tborder-radius: var(--border-radius-card);\n\tbox-shadow: 0px 4px 16px 0px rgba(99, 77, 255, 0.06);\n\tpadding: 24px;\n\twidth: 100%;\n\tmax-width: var(--container-width);\n}\n\n/* Label Styling */\n.n8n-form-label {\n\tcolor: var(--color-label);\n\tfont-size: 14px;\n\tfont-weight: 600;\n\tmargin-bottom: 8px;\n}\n\n/* Input & Dropdown Styling */\n.n8n-form-input, .n8n-form-select {\n\tborder: 1px solid var(--color-card-border);\n\tborder-radius: var(--border-radius-input);\n\tcolor: var(--color-input-text);\n\tfont-size: 14px;\n\tpadding: 12px;\n}\n\n.n8n-form-input:focus {\n\tborder-color: var(--color-focus-border);\n\toutline: none;\n}\n\n/* Submit Button Styling */\n.n8n-form-submit {\n\tbackground-color: var(--color-submit-btn-bg) !important;\n\tcolor: var(--color-submit-btn-text) !important;\n\theight: 48px;\n\tborder-radius: 6px;\n\tfont-weight: 600;\n\tcursor: pointer;\n\ttransition: opacity 0.2s;\n}\n\n.n8n-form-submit:hover {\n\topacity: 0.9;\n}"
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ae075a69-598b-46d2-9569-716be8b3f1d8",
+      "name": "On form submission",
+      "webhookId": "a34342d8-04f0-484f-9e3f-2a787ba69961",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0",
+          "mode": "list",
+          "cachedResultName": "Samsara Guest Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Booking ID": "={{ $json.booking_id }}",
+            "Status": "Confirmed",
+            "Amount Paid": "={{ $json[\"Amount if Partial\"] }}"
+          },
+          "matchingColumns": [
+            "Booking ID"
+          ],
+          "schema": [
+            {
+              "id": "Date of Inquiry",
+              "displayName": "Date of Inquiry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SessionID",
+              "displayName": "SessionID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Guest Name",
+              "displayName": "Guest Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Booking ID",
+              "displayName": "Booking ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Room Type",
+              "displayName": "Room Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Check- In",
+              "displayName": "Check- In",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Check-Out",
+              "displayName": "Check-Out",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Special Requests (Allergies/Notes)",
+              "displayName": "Special Requests (Allergies/Notes)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Price",
+              "displayName": "Total Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount Paid",
+              "displayName": "Amount Paid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "4a289236-d240-4a71-893a-9aa1091cf3fd",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aD76PwZTEkPQW25f",
+          "name": "Google Sheets account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ce71b35c-79c8-49f9-967b-796dbf31f41d",
+              "name": "=calendar_id",
+              "value": "={{    ({     \"Attic #1\": \"fc6a445d36e2f122709289299d63f090403328ce786016f461e71936c568e4a6@group.calendar.google.com\",  \"Attic #2\": \"5e22cf311d283ef7b7f0e1b73c804774216551f1af8fad09893dd5b14b16194a@group.calendar.google.com\",     \"Private Bedroom\": \"b8882ca80e81665a3c9325983849f2b800d3c0f4f95e542289437108990c2ac9@group.calendar.google.com\",  \"Dormitory Bed 1\": \"2a605829d201acd8d40b38cffaf0c9bc2d29f321b91e6436fbf4ae7f70e6f889@group.calendar.google.com\",  \"Dormitory Bed 2\": \"6632ac0ebca6cb99e6312a41d7a1974b844f3e4228e8d1799cdaaf7c040475ef@group.calendar.google.com\",  \"Dormitory Bed 3\": \"4a7cd60d300d1dcd1fb9341f544f3d7d0c73923c147f8b41d206949f643de7bf@group.calendar.google.com\",  \"Dormitory Bed 4\": \"d76e0bd94facbfbaa124a1afbc7e8278cf3b541c50dafcb2858100e084156205@group.calendar.google.com\"   })[$json[\"Room Type\"]] \n\n \"anmolrehani33@gmail.com\" }}",
+              "type": "string"
+            },
+            {
+              "id": "c8264e7d-accf-4732-a4cf-5a43f06ccfa3",
+              "name": "=real check in",
+              "value": "={{ new Date((($json[\"Check- In\"] - 25569) * 86400 * 1000)).toISOString().split('T')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "10acc804-841e-4616-8fd6-4797e8cbcc48",
+              "name": "real check out",
+              "value": "={{ new Date((($json[\"Check-Out\"] - 25569) * 86400 * 1000)).toISOString().split('T')[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        128
+      ],
+      "id": "419ad94d-2e10-4f47-a50d-1c0a72c41c77",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $('Edit Fields').item.json.calendar_id }}",
+          "mode": "id"
+        },
+        "eventId": "={{ $json.id }}",
+        "useDefaultReminders": "=",
+        "updateFields": {
+          "color": "10",
+          "summary": "=Confirmed:{{ $('Edit Fields').item.json['Guest Name']  }}-{{ $('Edit Fields').item.json['Room Type'] }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1088,
+        128
+      ],
+      "id": "14dff8e1-695b-42fa-9ff2-d08d64d60b5e",
+      "name": "Update an event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "mOdPXfdtDCsnjIst",
+          "name": "Google Calendar account 8"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields').item.json.Email }}",
+        "subject": "=Booking ID:{{ $('Edit Fields').item.json['Booking ID'] }} Confirmed!!!",
+        "message": "=<!DOCTYPE html> <html> <head> <style>   body { font-family: 'Open Sans', sans-serif; background-color: #fbfcfe; color: #555; line-height: 1.6; }   .container { width: 100%; max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border: 1px solid #dbdfe7; border-radius: 8px; box-shadow: 0px 4px 16px 0px rgba(99, 77, 255, 0.06); }   .logo { text-align: center; margin-bottom: 25px; }   .logo img { max-width: 150px; }   h1 { color: #ff6d5a; font-size: 24px; font-weight: 600; text-align: center; }   .details-box { background-color: #f9fafb; border: 1px solid #dbdfe7; border-radius: 6px; padding: 15px; margin: 20px 0; }   .label { font-weight: 600; color: #525356; }   .footer { text-align: center; font-size: 12px; color: #7e8186; margin-top: 30px; } </style> </head> <body>   <div class=\"container\">     <div class=\"logo\">   <img src=\"https://lh3.googleusercontent.com/u/0/d/1KQ4O5J183YEmPulNmfbQFMfQYbp6H-68\" alt=\"Samsara Farmstay Logo\" width=\"150\">\n </div>     <h1>Booking Confirmed!</h1>     <p>Dear {{ $('Edit Fields').item.json['Guest Name'] }},</p>     <p>Great news! Your payment has been verified and your stay at Samsara Farmstay is now officially **Confirmed**.</p>          <div class=\"details-box\">       <p><span class=\"label\">Room:</span> </p>{{ $('Edit Fields').item.json['Room Type'] }}       <p><span class=\"label\">Guest:</span> {{ $('Edit Fields').item.json['Guest Name'] }}</p>       <p><span class=\"label\">Check-In:</span>  {{ $('Edit Fields').item.json['real check in'] }}(after 1:00 PM)</p>       <p><span class=\"label\">Check-Out:</span> {{ $('Edit Fields').item.json['real check out'] }}(at 11:00 AM)</p>       <p><span class=\"label\">Special Requests:</span>{{ $('Edit Fields').item.json['Special Requests (Allergies/Notes)'] }} </p>     </div>      <p>We are very much looking forward to welcoming you.</p>     <div class=\"footer\">       <p>Samsara Farmstay, Naggar, Himachal Pradesh \n </p>     </div>   </div> </body> </html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1296,
+        128
+      ],
+      "id": "bbe6ceda-af9d-43e2-933e-7ed3fabb6d34",
+      "name": "Guest Confirmation Email",
+      "webhookId": "c15a2e49-78c0-4864-a34c-74c5ffb8ddd2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YHNGC2aVS0BrVawK",
+          "name": "Gmail account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "samsarafarmstay@gmail.com",
+        "subject": "=You confirmed a booking -{{ $('Edit Fields').item.json['Booking ID'] }} !!!",
+        "message": "=<!DOCTYPE html> <html> <head> <style>   body { font-family: 'Open Sans', sans-serif; background-color: #fbfcfe; color: #555; line-height: 1.6; }   .container { width: 100%; max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border: 1px solid #dbdfe7; border-radius: 8px; box-shadow: 0px 4px 16px 0px rgba(99, 77, 255, 0.06); }   .logo { text-align: center; margin-bottom: 25px; }   .logo img { max-width: 150px; }   h1 { color: #ff6d5a; font-size: 24px; font-weight: 600; text-align: center; }   .details-box { background-color: #f9fafb; border: 1px solid #dbdfe7; border-radius: 6px; padding: 15px; margin: 20px 0; }   .label { font-weight: 600; color: #525356; }   .footer { text-align: center; font-size: 12px; color: #7e8186; margin-top: 30px; } </style> </head> <body>   <div class=\"container\">     <div class=\"logo\">   <img src=\"https://lh3.googleusercontent.com/u/0/d/1KQ4O5J183YEmPulNmfbQFMfQYbp6H-68\" alt=\"Samsara Farmstay Logo\" width=\"150\">\n </div>     <h1>Booking Confirmed!<!DOCTYPE html>\n<html>\n<head>\n<style>\n  body { font-family: 'Open Sans', sans-serif; background-color: #fbfcfe; color: #555; line-height: 1.6; }\n  .container { width: 100%; max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border: 1px solid #dbdfe7; border-radius: 8px; box-shadow: 0px 4px 16px 0px rgba(99, 77, 255, 0.06); }\n  \n</style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"logo\">\n   \n    <div class=\"details-box\">\n      <p><span class=\"label\">Room:</span>{{ $('Edit Fields').item.json['Room Type'] }} </p>\n      <p><span class=\"label\">Guest:</span>{{ $('Edit Fields').item.json['Guest Name'] }} </p>\n      <p><span class=\"label\">Check-In:</span>{{ $('Edit Fields').item.json['real check in'] }} (after 1:00 PM)</p>\n      <p><span class=\"label\">Check-Out:</span>{{ $('Edit Fields').item.json['real check out'] }}  (at 11:00 AM)</p>\n      <p><span class=\"label\">Special Requests:</span> {{ $json[\"Special Requests (Allergies/Notes)\"] || \"None\" }}</p>\n    </div>\n</p>\n   <div class=\"footer\">       <p>Samsara Farmstay, Naggar, Himachal Pradesh \n </p>     </div>   </div> </body> </html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1504,
+        128
+      ],
+      "id": "08801cab-1ec3-4285-a2b1-2cef94777d7e",
+      "name": "Host Confirmation Email",
+      "webhookId": "a9d95d8c-c01d-4d24-a3f1-b3f3ae89b215",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Jxk0B83EF6lcREHZ",
+          "name": "nitika"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $json.calendar_id }}",
+          "mode": "id",
+          "__regex": "(^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $json['real check in'] }}",
+        "timeMax": "={{ $json['real check out'] }}",
+        "options": {
+          "recurringEventHandling": "expand"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        880,
+        128
+      ],
+      "id": "fcd1f566-e3a5-4312-8ac4-6c7bc58a3c14",
+      "name": "Get many events",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "2Szz3ARGWOoN4m6z",
+          "name": "final a33"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0",
+          "mode": "list",
+          "cachedResultName": "Samsara Guest Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Booking ID",
+              "lookupValue": "={{ $json['Booking ID'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        416,
+        0
+      ],
+      "id": "e2d66031-6d1f-4188-ab17-a2d2af054f5c",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aD76PwZTEkPQW25f",
+          "name": "Google Sheets account 6"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get many events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update an event": {
+      "main": [
+        [
+          {
+            "node": "Guest Confirmation Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guest Confirmation Email": {
+      "main": [
+        [
+          {
+            "node": "Host Confirmation Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events": {
+      "main": [
+        [
+          {
+            "node": "Update an event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "b6ae7bb7-1df7-4913-8805-f44694546c8f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "707c7463d379cc81ebe531de1b62624223799a621782714db71df39fe365a468"
+  },
+  "id": "AJXeIfBqj2eHUw5n",
+  "tags": []
+}

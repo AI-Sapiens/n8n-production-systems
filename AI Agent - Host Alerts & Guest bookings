@@ -1,0 +1,1303 @@
+{
+  "name": "AI Agent - Host Alerts & booking",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const output = items[0].json.output;\nconst hasAlert = output.includes('[HOST_ALERT]');\n\nif (hasAlert) {\n  const parts = output.split('[HOST_ALERT]');\n  const alertContent = parts[1].trim();\n  \n  // Extract name if it follows the \"Name: [Value] |\" format\n  const nameMatch = alertContent.match(/Name:\\s*(.*?)\\s*\\|/);\n  const guestName = nameMatch ? nameMatch[1] : \"New Inquiry\";\n\n  return [{\n    json: {\n      guest_message: parts[0].trim(),\n      host_alert: alertContent.split('Note:')[1]?.trim() || alertContent,\n      guest_name: guestName,\n      send_to_host: true\n    }\n  }];\n} else {\n  return [{\n    json: {\n      guest_message: output,\n      host_alert: null,\n      guest_name: null,\n      send_to_host: false\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2304,
+        -416
+      ],
+      "id": "035483b3-f2c0-45f1-8f24-02017304e2a8",
+      "name": "Message Splitter"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.send_to_host }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -2080,
+        -416
+      ],
+      "id": "20879470-5338-4e6b-b312-af6fcb0a8961",
+      "name": "Is there a Host Alert?"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -1856,
+        -512
+      ],
+      "id": "7bceb6d6-6548-4f6e-8d9b-2a3f5d4c0f85",
+      "name": "NOTIFY HOST"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -1632,
+        -320
+      ],
+      "id": "b220a48a-7943-4466-8a42-67748258d00c",
+      "name": "SEND TO GUEST"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "## 1. IDENTITY & PERSONA\nYou are Sam, the digital concierge for Samsara Farmstay. Your tone is warm, polite, and slightly rustic, representing a place of peace and organic living. Keep responses under 3 sentences for WhatsApp readability. Use italics for emphasis and max 2 emojis (🌿, ☀️) per message. Always introduce yourself if it's the first message by the user in the session. Always create an event when adding an entry to the guest log.\n\n## 2. INVENTORY & OCCUPANCY RULES\n- **Rooms:** Attic #1 (Max 3), Attic #2 (Max 3), Private Bedroom (Max 2).\n- **Extra Mattress Rule:** If a guest books for 3 or 4 people in a Private Room/Attic, you MUST state: \"We can accommodate you with extra mattresses for ₹500 per additional guest per night.\"\n- **Dormitory Inventory:** You manage 4 distinct beds: `Dormitory Bed 1`, `Dormitory Bed 2`, `Dormitory Bed 3`, and `Dormitory Bed 4`.\n- **Dormitory Assignment Logic:** - Check all 4 individual calendars. Assign the guest to the *first available* specific bed name.\n    - **Group Bookings:** If a guest books multiple beds, call `Add guest to log` **ONLY ONCE**. List all assigned beds separated by a comma (e.g., \"Dormitory Bed 1, Dormitory Bed 2\"). Calculate `Total Price` as the sum of all beds and provide **ONE** UPI link.\n- **Strict Naming:** You are FORBIDDEN from using the word \"Dormitory\" alone in tools. You must always pass the specific bed name(s) to the Room Type parameter.\n- **Status & Deletion:** Inform guests that \"Confirmed\" status only triggers automatically when the exact Total Price is received. You may only use the `Delete an event` tool if the status is **Pending**.\n\n### Room & Calendar ID Mapping:\n- Attic #1: fc6a55a4fc6ba6ec1deed0e8568fb1402226bb5a8957566a866aaf6f0ff9e4a6@group.calendar.google.com\n- Attic #2: 5e22cf311d283ef7b7f0e1b73c804774216551f1af8fad09893dd5b14b16194a@group.calendar.google.com\n- Private Bedroom: b88897bbee3dff12a9ce5bdda14fca72bc1110f4574474c51d116a3137cd2ac9@group.calendar.google.com\n- Dormitory Bed 1: 2a605829d201acd8d40b38cffaf0c9bc2d29f321b91e6436fbf4ae7f70e6f889@group.calendar.google.com\n- Dormitory Bed 2: 6632ac0ebca6cb99e6312a41d7a1974b844f3e4228e8d1799cdaaf7c040475ef@group.calendar.google.com\n- Dormitory Bed 3: 4a7cd60d300d1dcd1fb9341f544f3d7d0c73923c147f8b41d206949f643de7bf@group.calendar.google.com\n- Dormitory Bed 4: d76e0bd94facbfbaa124a1afbc7e8278cf3b541c50dafcb2858100e084156205@group.calendar.google.com\n\n## 3. OPERATIONAL TOOL PROTOCOL (STRICT ORDER)\n- **STEP 1: INFO LOOKUP:** Before answering price/rule questions, use `farmstay_info_lookup` (Sheet ID: 1OxVdVjAHImYirtuMzjfw_OGqYSoqDHlkaCNHbVJKoMI).\n- **STEP 2: AVAILABILITY:** When dates are mentioned, use `Get availability`. Check-in: 2:00 PM | Check-out: 11:00 AM.\n- **STEP 3: COLLECTION:** Before booking, collect: 1. Full Name, 2. Guest Count, 3. Phone, 4. Email.\n- **STEP 4: FINALIZATION:** Use `Create an event` AND `Add guest to log`. Set Title as: `Pending: [Guest Name] - [Room Type]`.\n- **STEP 5: ALLERGY/REQUESTS:** Immediately log allergies or special requests using `Add guest to log`.\n- **STEP 6: BOOKING LOOKUP:** Use `Lookup guest booking` for status or detail inquiries.\n\n## 4. CRITICAL: HOST NOTIFICATION LOGIC\nIf a guest mentions booking, confirmation, allergies, or emergencies, append: `[HOST_ALERT] Name: [Guest Name] | Note: [Alert Details]`.\n\n## 5. PRICING & PAYMENT LOGIC\n- **Calculation:** (Base Price × Nights) + (₹500 × Guests > 2) + (Activity Price × Participants).\n- Quote the Total: You MUST state: \"Your total for this stay is ₹{{ $node[\"CalculateTotal\"].json[\"total\"] }}.\"\n- The Desktop Fix (QR Code): Display this image so desktop users can scan it with their phone:\n![Scan to Pay](https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=nitika.jain21992-1@okhdfcbank%26pn=Samsara%20Farmstay%26cu=INR)\n- The Mobile Fix (Deep Link): Provide this for phone users: upi://pay?pa=nitika.jain21992-1@okhdfcbank&pn=Samsara%20Farmstay\n- Instruction: \"If you're on a computer, scan the QR code with your UPI app (GPay/PhonePe). If you're on mobile, tap the link above. Please manually enter the amount of ₹{{ $node[\"CalculateTotal\"].json[\"total\"] }}.\"\n  #Screenshot verification:\n- The Request: Immediately after the payment info, Sam must say: \"Once the payment is done, please share a screenshot of the receipt here. I'll then finalize your booking in our calendar! 🌿\"\n- The Handling: If the user uploads an image, Sam should respond: \"Got it! I'm sharing this with the host for a quick check. Your peace of mind is our priority. ☀️\"\n- When giving UPI details, tell the guest: 'To confirm instantly, please include {{ $json.booking_id }} in your payment remarks/notes. 🌿\n\n## 6. TEMPORAL & DATE LOGIC\n- **Current Year:** 2026. Use ISO format `YYYY-MM-DD` for tools.\n- **Suffixes:** Append `T13:00:00` for Check-in and `T11:00:00` for Check-out."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -3040,
+        -416
+      ],
+      "id": "b2c676ef-3380-47eb-b4da-2da550bc525d",
+      "name": "AI Agent",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -3744,
+        -128
+      ],
+      "id": "6ddb5d87-c775-44cb-9ce5-ffb78fc892c3",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "fCs776oh3CUmqgWT",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 1000
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -3568,
+        -80
+      ],
+      "id": "c59b3ca5-2620-4f74-ad5d-08407aff1bad",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to check availability for a specific room calendar. You MUST provide the Calendar ID for the room, check-in datetime, and check-out datetime. This tool returns a list of existing events (bookings) in that time range. If events are returned, the room is BOOKED. The response includes event IDs which can be used for deletion if needed.",
+        "resource": "calendar",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $fromAI('calendar_id', 'The specific Google Calendar ID for the room from the Mapping Table') }}",
+          "mode": "id"
+        },
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start_Time', `Check-in date and time in ISO format (e.g., 2024-04-09T14:00:00)`, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('check_out_datetime', 'Check-out date and time in ISO format (e.g., 2024-04-09T11:00:00)') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -3312,
+        -96
+      ],
+      "id": "f99ec983-089f-4048-a565-d2e92806c5bc",
+      "name": "Get availability in a calendar in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "1GJeQ3k7ppjCg6yQ",
+          "name": "Google Calendar account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to check current room prices, availability, occupancy Rule and specific house rules for Samsara Farmstay.",
+        "documentId": {
+          "__rl": true,
+          "value": "1OxVdVjAHImYirtuMzjfw_OGqYSoqDHlkaCNHbVJKoMI",
+          "mode": "list",
+          "cachedResultName": "FAQ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OxVdVjAHImYirtuMzjfw_OGqYSoqDHlkaCNHbVJKoMI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "FAQ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OxVdVjAHImYirtuMzjfw_OGqYSoqDHlkaCNHbVJKoMI/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -3088,
+        -96
+      ],
+      "id": "42754712-ffa7-4707-ac8d-34ac74ce3eac",
+      "name": "farmstay_info_lookup",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aD76PwZTEkPQW25f",
+          "name": "Google Sheets account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to log guest information to the Samsara Guest Log. ALWAYS use this when: 1) A guest provides allergy/special request information, OR 2) When finalizing a booking after collecting name, phone, email, room type, and dates. For allergies without booking details, use \"Inquiry\" for Guest Name and leave other fields empty except Special Requests. EXACT room name. For multiple beds, use a comma-separated list (e.g., Dormitory Bed 1, Dormitory Bed 2).",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0",
+          "mode": "list",
+          "cachedResultName": "Samsara Guest Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Guest Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Guest_Name', `Full name of the guest, or \"Inquiry\" if name not yet provided`, 'string') }}",
+            "Phone Number": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Phone_Number', `Guest phone number with country code, or leave empty if not provided`, 'string') }}",
+            "Email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Email', `Guest email address, or leave empty if not provided`, 'string') }}",
+            "Room Type": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Room_Type', `he EXACT room name. Must be one of: 'Attic #1', 'Attic #2', 'Private Bedroom', 'Dormitory Bed 1', 'Dormitory Bed 2', 'Dormitory Bed 3', or 'Dormitory Bed 4'. Do not generalize.`, 'string') }}",
+            "Status": "Pending",
+            "Date of Inquiry": "={{ $now.format('yyyy-MM-dd HH:MM') }}",
+            "Special Requests (Allergies/Notes)": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Special_Requests__Allergies_Notes_', `Allergies, special requests, or important notes about the guest`, 'string') }}",
+            "Check- In": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Check-_In', `Check-in date, or leave empty if not specified`, 'string') }}",
+            "Check-Out": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Check-Out', `Check-out date, or leave empty if not specified`, 'string') }}",
+            "Total Price": "=={{ $fromAI('total_price', 'The total calculated price for the stay including extra mattress fees') }}",
+            "Amount Paid": "=0",
+            "Booking ID": "=SAMSARA{{ Math.floor(1000 + Math.random() * 9000) }}",
+            "SessionID": "={{ $json.sessionId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date of Inquiry",
+              "displayName": "Date of Inquiry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "SessionID",
+              "displayName": "SessionID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Guest Name",
+              "displayName": "Guest Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Booking ID",
+              "displayName": "Booking ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Room Type",
+              "displayName": "Room Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Check- In",
+              "displayName": "Check- In",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Check-Out",
+              "displayName": "Check-Out",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Special Requests (Allergies/Notes)",
+              "displayName": "Special Requests (Allergies/Notes)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Total Price",
+              "displayName": "Total Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Amount Paid",
+              "displayName": "Amount Paid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "e81eb726-7702-4579-9660-36f86be39ccd",
+      "name": "Add guest to log",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -2912,
+        -80
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "WZSr4WhE8mwzVEj3",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to search for existing guest bookings in the Samsara Guest Log. Search by guest name, phone number, or email to retrieve booking details including room type, check-in/check-out dates, status, and special requests.",
+        "documentId": {
+          "__rl": true,
+          "value": "1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0",
+          "mode": "list",
+          "cachedResultName": "Samsara Guest Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "options": {}
+      },
+      "id": "a69fe70d-3303-4356-ab9e-3f44b099803f",
+      "name": "Lookup guest booking",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -2768,
+        -80
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "T7VVUcGmWFhaKjNW",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Create an event in Google Calendar",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $fromAI('calendar_id') }}",
+          "mode": "id"
+        },
+        "start": "={{ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ $fromAI('check_out') }}",
+        "additionalFields": {
+          "allday": "no",
+          "summary": "=Pending: {{ $fromAI('guest_name') }} - {{ $fromAI('room_type') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -2560,
+        -128
+      ],
+      "id": "f25f63fa-ec99-4f38-94af-8b4e741a9919",
+      "name": "Create an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "UxYUxXyzgCiZGPlA",
+          "name": "Google Calendar account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $fromAI('calendar_id') }}",
+          "mode": "id"
+        },
+        "eventId": "={{ $fromAI('event_id', 'The ID of the event to be deleted') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -2240,
+        -176
+      ],
+      "id": "3a364920-9efc-40bd-ab0f-41d6d47c25ae",
+      "name": "Delete an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "5sqX6gpzUsp8WKSY",
+          "name": "Google Calendar account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d16e0dec-4623-4a87-9d38-7aee5a6a9831",
+              "name": "output",
+              "value": "={{ $json.guest_message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1856,
+        -320
+      ],
+      "id": "756b146d-17c9-4eb1-a799-1cb6b055a81e",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Welcome to Samsara Farmstay! How can I assist you today? 🌿",
+        "options": {
+          "allowFileUploads": true,
+          "customCss": ":root {\n  /* Colors - Inspired by Himalayan Forests and Terracotta Pottery */\n  --chat--color--primary: #4A5D4E; /* Deep Forest Green */\n  --chat--color--primary-shade-50: #3D4D40;\n  --chat--color--primary--shade-100: #2F3B32;\n  --chat--color--secondary: #C67B58; /* Earthy Terracotta / Pottery Clay */\n  --chat--color-secondary-shade-50: #B36A49;\n  --chat--color-white: #FFFFFF;\n  --chat--color-light: #F9F7F2; /* Soft Cream / Off-white Background */\n  --chat--color-light-shade-50: #F0EDE5;\n  --chat--color-light-shade-100: #DED9CC;\n  --chat--color-medium: #BDC3C7;\n  --chat--color-dark: #2C3E50; /* Slate charcoal for readability */\n  --chat--color-disabled: #D2D4D9;\n  --chat--color-typing: #4A5D4E;\n\n  /* Base Layout */\n  --chat--spacing: 1rem;\n  --chat--border-radius: 0.75rem; /* Rounded for a softer, organic feel */\n  --chat--transition-duration: 0.2s;\n  --chat--font-family: 'Lora', 'Georgia', serif; /* Serif font for a rustic, literary feel */\n\n  /* Window Dimensions */\n  --chat--window--width: 420px;\n  --chat--window--height: 650px;\n  --chat--window--bottom: 20px;\n  --chat--window--right: 20px;\n  --chat--window--z-index: 9999;\n  --chat--window--border: 1px solid var(--chat--color-light-shade-100);\n  --chat--window--border-radius: 1rem;\n  --chat--window--margin-bottom: var(--chat--spacing);\n  --chat--window--box-shadow: 0 10px 25px rgba(0,0,0,0.1);\n\n  /* Header Styles */\n  --chat--header-height: auto;\n  --chat--header--padding: 1.5rem var(--chat--spacing);\n  --chat--header--background: var(--chat--color--primary);\n  --chat--header--color: var(--chat--color-white);\n  --chat--header--border-top: none;\n  --chat--header--border-bottom: 2px solid var(--chat--color--secondary);\n  --chat--heading--font-size: 1.5em;\n  --chat--subtitle--font-size: 0.9em;\n  --chat--subtitle--line-height: 1.4;\n\n  /* Message Styles */\n  --chat--message--font-size: 0.95rem;\n  --chat--message--padding: 0.8rem 1.2rem;\n  --chat--message--border-radius: 12px;\n  --chat--message-line-height: 1.6;\n  --chat--message--margin-bottom: 1rem;\n  --chat--message--bot--background: var(--chat--color-white);\n  --chat--message--bot--color: var(--chat--color-dark);\n  --chat--message--bot--border: 1px solid var(--chat--color-light-shade-50);\n  --chat--message--user--background: var(--chat--color--primary);\n  --chat--message--user--color: var(--chat--color-white);\n  --chat--message--user--border: none;\n  --chat--messages-list--padding: var(--chat--spacing);\n\n  /* Toggle Button (The Launcher) */\n  --chat--toggle--size: 60px;\n  --chat--toggle--background: var(--chat--color--secondary);\n  --chat--toggle--hover--background: var(--chat--color-secondary-shade-50);\n  --chat--toggle--color: var(--chat--color-white);\n  --chat--toggle--box-shadow: 0 4px 12px rgba(198, 123, 88, 0.4);\n\n  /* Input Area */\n  --chat--textarea--height: 55px;\n  --chat--input--background: var(--chat--color-white);\n  --chat--input--border: 1px solid var(--chat--color-light-shade-100);\n  --chat--input--padding: 1rem;\n  --chat--input--text-color: var(--chat--color-dark);\n\n  /* Button Styles */\n  --chat--button--background--primary: var(--chat--color--secondary);\n  --chat--button--color--primary: var(--chat--color-white);\n  --chat--button--border-radius: 2rem; /* Pill-shaped buttons */\n\n  /* Body and Footer */\n  --chat--body--background: var(--chat--color-light);\n  --chat--footer--background: var(--chat--color-white);\n  --chat--footer--border-top: 1px solid var(--chat--color-light-shade-50);\n}\n\n/* Custom Overrides for more \"Organic\" feeling */\n.chat-message {\n  max-width: 85%; /* Wider for readability */\n  box-shadow: 0 2px 5px rgba(0,0,0,0.03);\n}\n\n.chat-message-user {\n  border-bottom-right-radius: 2px; /* Chat bubble tail */\n}\n\n.chat-message-bot {\n  border-bottom-left-radius: 2px; /* Chat bubble tail */\n}",
+          "responseMode": "responseNodes"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -4720,
+        -560
+      ],
+      "id": "ba096430-47b3-4f65-891c-81a1a566db6a",
+      "name": "When chat message received",
+      "webhookId": "51612d15-77bf-40b0-8a40-4e4d407e6e4d"
+    },
+    {
+      "parameters": {
+        "sendTo": "samsarafarmstay@gmail.com",
+        "subject": "={{ $json.guest_name }} Guest Alert",
+        "message": "={{ $json.host_alert }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -1632,
+        -512
+      ],
+      "id": "e534af7e-565d-49e8-81a3-b703c6bdf4f4",
+      "name": "Send a message",
+      "webhookId": "d5d9f619-c7bd-44b6-8c93-0fabe37506c3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UqFFWi3WkEB9nWXc",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c2b221cc-7fe4-4356-8ce9-206bd10eb6d6",
+              "leftValue": "={{ !!$binary?.data0 }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -3888,
+        -608
+      ],
+      "id": "04594e16-99bd-415d-b921-6d7b382b4db9",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.query.action }}",
+                    "rightValue": "approve",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "35bf7af8-1060-4786-af21-9d877548ca1b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Approve"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0bca846c-219e-4b8a-892b-2c42b699034e",
+                    "leftValue": "={{ $json.query.action }}",
+                    "rightValue": "decline",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Decline"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -832,
+        -800
+      ],
+      "id": "11400266-d248-46f8-8f60-72fdb432dc4c",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "sendTo": "samsarafarmstay@gmail.com",
+        "subject": "Payment Receipt Received: Verify now",
+        "message": "=Hi Nitika, a new receipt is attached.\n\n<div style=\"font-family: Arial, sans-serif; line-height: 1.6;\">\n  <h2>Payment Verification: Samsara Farmstay</h2>\n  <p>Guest <b>{{ $json['Guest Name'] }}</b> has uploaded a screenshot.</p>\n  <p><b>Booking ID:</b> {{ $json['Booking ID'] }}<br>\n     <b>Total Price:</b> ₹{{ $json['Total Price'] }}</p>\n\n  <hr>\n<a href=\"https://anmolrehani.app.n8n.cloud/form/a34342d8-04f0-484f-9e3f-2a787ba69961?booking_id={{ $json['Booking ID'] }}\" \n   style=\"background-color: #ff6d5a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">\n   Review & Approve Payment\n</a>",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "={{ $('When chat message received').item.json.files[0].binaryKey }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -1072,
+        -1232
+      ],
+      "id": "67087181-168e-4f5f-9b4c-e333fd25d42b",
+      "name": "Send Host notification of ScreenShot",
+      "webhookId": "45181594-96d6-4d9e-bc11-1526e9818279",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1fXKjqw0lwKo56YE",
+          "name": "Gmail account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.2,
+      "position": [
+        -1392,
+        -384
+      ],
+      "id": "e51bfbdc-ba68-4565-9087-8671e319c448",
+      "name": "Chat3",
+      "webhookId": "898fe346-3c0d-4afd-b635-ffeb83e32e4c"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0",
+          "mode": "list",
+          "cachedResultName": "Samsara Guest Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "SessionID",
+              "lookupValue": "={{ $json.sessionId }}"
+            },
+            {
+              "lookupColumn": "Booking ID",
+              "lookupValue": "={{ $json.chatInput }}"
+            }
+          ]
+        },
+        "combineFilters": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3424,
+        -848
+      ],
+      "id": "11b70e03-371a-457c-a004-f886bce5950f",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aD76PwZTEkPQW25f",
+          "name": "Google Sheets account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "message": "I see your proof! 🌿 Could you please type your Booking ID (e.g., SAMSARA6452 so I can verify this? Once shared, keep an eye out for the booking confirmation email.",
+        "options": {
+          "memoryConnection": true,
+          "limitWaitTime": {
+            "values": {
+              "resumeAmount": 3,
+              "resumeUnit": "minutes"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.2,
+      "position": [
+        -2992,
+        -1328
+      ],
+      "id": "b2053473-f5fd-41c8-95b7-2bcfbe54dd79",
+      "name": "Chat4",
+      "webhookId": "cb6af07a-b9ed-444e-9631-0956a9370214"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -2800,
+        -1456
+      ],
+      "id": "86212ef3-ebd6-4a7e-97c3-1ade0cf6c264",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e446561d-980f-439f-957b-f58171d844b2",
+              "leftValue": "={{ $json['Booking ID'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -3280,
+        -1136
+      ],
+      "id": "760c498d-6530-475e-9add-ec3df03831eb",
+      "name": "If1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0",
+          "mode": "list",
+          "cachedResultName": "Samsara Guest Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HynMsLFoRtpl7x1T1Gw0Oe0NVEnt_EfG2rMSRp6OlH0/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Booking ID",
+              "lookupValue": "="
+            }
+          ]
+        },
+        "combineFilters": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2320,
+        -1328
+      ],
+      "id": "d3411027-f7ea-4569-9a58-7c1a4c5a1c2f",
+      "name": "Get row(s) in sheet1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aD76PwZTEkPQW25f",
+          "name": "Google Sheets account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1856,
+        -1040
+      ],
+      "id": "258bc28a-cc09-484c-8f47-772f68943be2",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $fromAI('calendar_id') }}",
+          "mode": "id"
+        },
+        "eventId": "={{ $node[\"Create an event in Google Calendar\"].json[\"id\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -464,
+        -720
+      ],
+      "id": "cca74832-3b07-42df-b044-ab59e2ae3e21",
+      "name": "Delete an event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "mOdPXfdtDCsnjIst",
+          "name": "Google Calendar account 8"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "message": "=Hi {{ $node[\"AI Agent\"].json[\"guest_name\"] }}, we were unable to verify your payment receipt. ⚠️ Your pending reservation has been released. Please reach out if you have any questions! 🌿",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        -720
+      ],
+      "id": "b182b12d-b94b-44f7-8e81-f76100a57448",
+      "name": "Chat1",
+      "webhookId": "898fe346-3c0d-4afd-b635-ffeb83e32e4c"
+    },
+    {
+      "parameters": {
+        "message": "=Hi {{ $node[\"AI Agent\"].json[\"guest_name\"] }}! Payment verified. 🌿 Your stay at Samsara Farmstay is now officially confirmed. We look forward to seeing you soon! ☀️",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.2,
+      "position": [
+        -272,
+        -976
+      ],
+      "id": "26d1af94-6887-4ea5-9302-029ac4352ceb",
+      "name": "Chat",
+      "webhookId": "898fe346-3c0d-4afd-b635-ffeb83e32e4c"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "={ $fromAI('calendar_id') }}",
+          "mode": "id"
+        },
+        "eventId": "={{ $node[\"Create an event in Google Calendar\"].json[\"id\"] }}",
+        "updateFields": {
+          "color": "6",
+          "summary": "=Confirmed: {{ $node[\"AI Agent\"].json[\"guest_name\"] }} - {{ $node[\"AI Agent\"].json[\"property_name\"] }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -496,
+        -976
+      ],
+      "id": "c03ee31f-5d6f-4cd7-b7ab-119171370954",
+      "name": "Update an event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "YXnpQNFfDL0GGSB0",
+          "name": "Google Calendar account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "message": "Thank you!! 🌿,  keep an eye out for the booking confirmation email.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.2,
+      "position": [
+        -2928,
+        -928
+      ],
+      "id": "2cff00d8-f80b-43ee-8ec2-282f9c1f6375",
+      "name": "Chat2",
+      "webhookId": "3beea58a-87d0-4255-bcdc-35246bf6fbf0"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        -2400,
+        -128
+      ],
+      "id": "55af66d1-2da5-42a2-b2fe-e5eb0782b399",
+      "name": "Calculator"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Message Splitter": {
+      "main": [
+        [
+          {
+            "node": "Is there a Host Alert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is there a Host Alert?": {
+      "main": [
+        [
+          {
+            "node": "NOTIFY HOST",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Message Splitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get availability in a calendar in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "farmstay_info_lookup": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add guest to log": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup guest booking": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "SEND TO GUEST",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NOTIFY HOST": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Update an event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete an event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Host notification of ScreenShot": {
+      "main": [
+        []
+      ]
+    },
+    "SEND TO GUEST": {
+      "main": [
+        [
+          {
+            "node": "Chat3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "Chat4",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Chat4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chat2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat4": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Send Host notification of ScreenShot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete an event": {
+      "main": [
+        [
+          {
+            "node": "Chat1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update an event": {
+      "main": [
+        [
+          {
+            "node": "Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "39d97732-6426-4ac8-a014-82d464e5ecff",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "707c7463d379cc81ebe531de1b62624223799a621782714db71df39fe365a468"
+  },
+  "id": "vv26y0Dt2FPbjath",
+  "tags": []
+}

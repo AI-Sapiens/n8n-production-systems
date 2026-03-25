@@ -28,5 +28,10 @@ Manual guest coordination is prone to human error, double-bookings, and delayed 
 * **Integrations:** Google Calendar, Gmail, OpenAI
 * **Logic:** JavaScript (n8n Expressions), Webhooks
 
+##Preview
+
+![Workflow Preview](preview.png)
+![Workflow Preview](preview1.png)
+
 ## 👤 About AI-Sapiens
 Focusing on zero-hallucination AI logic and technical precision in workflow automation.
